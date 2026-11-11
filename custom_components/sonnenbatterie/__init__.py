@@ -19,6 +19,9 @@ from .token_client import TokenSonnenBatterie
 
 SCAN_INTERVAL = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
 
+# set up via config entries (UI) only, no configuration.yaml options
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 SCHEMA_SET_BATTERY_RESERVE = vol.Schema(
     {
         **cv.ENTITY_SERVICE_FIELDS,
@@ -113,14 +116,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     hass.data[DOMAIN][config_entry.entry_id] = {}
     hass.data[DOMAIN][config_entry.entry_id][CONF_COORDINATOR] = sb_coordinator
 
-    # battery_system is v1-only and unavailable in token-only mode - fall back
-    # to the real max power from "configurations" (always available via v2),
-    # and only to a generous guess if even that is missing.
-    inverter_power = (
-        sb_coordinator.latestData.get('battery_system', {}).get('battery_system', {}).get('system', {}).get('inverter_capacity')
-        or sb_coordinator.latestData.get('configurations', {}).get('IC_InverterMaxPower_w')
-        or 25000
-    )
+    # whole cascade's inverter power on a cascade master, see populate_battery_info()
+    # (which also falls back to the v2 "configurations" when v1 is unavailable).
+    # Only if no source has it at all, use a generous guess so the
+    # charge/discharge number entities still work.
+    inverter_power = sb_coordinator.latestData['battery_info']['max_power'] or 25000
     max_tou_power = sb_coordinator.latestData.get('commissioning_settings',{}).get('data', {}).get('attributes', {}).get('tou_max_power_limit', '22000')
     LOGGER.debug(f"inverter_power: {inverter_power}, tou_power: {max_tou_power}")
     hass.data[DOMAIN][config_entry.entry_id][CONF_INVERTER_MAX] = inverter_power

@@ -192,6 +192,12 @@
             "battery_module_count": {
                 "name": "Antal batterimoduler"
             },
+            "cascading_role": {
+                "name": "Kaskadroll"
+            },
+            "max_power": {
+                "name": "Max laddnings-/urladdningseffekt"
+            },
             "battery_grid_ipv": {
                 "name": "Batterisystem IPV"
             },

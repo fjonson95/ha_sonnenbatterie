@@ -555,13 +555,34 @@ SENSORS: tuple[SonnenbatterieSensorEntityDescription, ...] = (
         icon="mdi:battery",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda coordinator: (
-            coordinator.latestData.get("battery_system", {}).get("modules")
-            # v1-only; in token-only mode fall back to "configurations"
-            # (always available)
-            or coordinator.latestData.get("configurations", {}).get("IC_BatteryModules")
-        ),
+        # all modules of a cascade, not only the master's (falls back to the v2
+        # "configurations" in populate_battery_info() when v1 is unavailable)
+        value_fn=lambda coordinator: coordinator.latestData.get(
+            "battery_info", {}
+        ).get("module_count"),
         entity_registry_enabled_default=False,
+    ),
+    SonnenbatterieSensorEntityDescription(
+        key="cascading_role",
+        icon="mdi:battery-sync-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda coordinator: coordinator.latestData.get(
+            "battery_info", {}
+        ).get("cascading_role"),
+        entity_registry_enabled_default=False,
+    ),
+    SonnenbatterieSensorEntityDescription(
+        key="max_power",
+        icon="mdi:flash",
+        # static config value: no state_class, long-term statistics are pointless
+        native_unit_of_measurement="W",
+        device_class=SensorDeviceClass.POWER,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # max. charge/discharge power: the whole cascade's on a cascade master
+        value_fn=lambda coordinator: coordinator.latestData.get(
+            "battery_info", {}
+        ).get("max_power"),
+        entity_registry_enabled_default=True,
     ),
     SonnenbatterieSensorEntityDescription(
         key="battery_grid_ipv",

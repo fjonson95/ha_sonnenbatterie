@@ -347,7 +347,12 @@ class SonnenbatterieCoordinator(DataUpdateCoordinator):
                 self.latestData["battery_system"] = await self._safe_fetch(self.sbconn.get_batterysystem())
                 self.latestData["system_data"] = await self._safe_fetch(self.sbconn.get_systemdata())
                 self.latestData["api_configuration"] = await self._safe_fetch(self.sbconn.get_api_configuration())
-                self.latestData["commissioning_settings"] = await self._safe_fetch(self.sbconn.get_commissioning_settings())
+                # commissioning_settings is v1-only and only read by tou_max_power
+                # (which is never created in token-only mode) and the TOU limit
+                # default in __init__ - skip the request there, it just loads the
+                # battery's webserver for data nothing uses.
+                if not self._token_only:
+                    self.latestData["commissioning_settings"] = await self._safe_fetch(self.sbconn.get_commissioning_settings())
 
         except Exception as e:
             # raises UpdateFailed unless within the maintenance grace period,
